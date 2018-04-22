@@ -2,6 +2,7 @@ import heapq as hp
 import networkx as nx
 import pygraphviz as pgv
 import math
+from min_heap import MinHeap
 
 MAX_ATTEMPTS = 1000
 
@@ -17,20 +18,20 @@ class Problem:
 
     def solve_with_a_star(self):
         path=[]
-        openList = []
+        openList = MinHeap([])
         entryFinder = {}
-        hp.heappush(openList, (self.heuristic[self.startingNode], [self.startingNode, []]))
+        openList.insert(self.heuristic[self.startingNode], [self.startingNode, []])
         entryFinder[self.startingNode] = 0
         closedList = []
         memory_spend=0
 
         for i in range(1, MAX_ATTEMPTS):
-            if len(openList) is 0:
+            if openList.heap_size is 0:
                 raise Exception("Not found a solution")
             else:
-                if len(openList) > memory_spend:
-                    memory_spend = len(openList)
-                p = hp.heappop(openList)
+                if openList.heap_size > memory_spend:
+                    memory_spend = openList.heap_size
+                p = openList.extract_min()
                 cost_until_now = p[0]
                 actual_city = p[1][0]
                 if actual_city in entryFinder:
@@ -52,34 +53,34 @@ class Problem:
                             path = p[1][1]
                             newPath = list(path)
                             newPath.append(actual_city)
-                            hp.heappush(openList, (cost, [adj_city, newPath]))
+                            openList.insert(cost, [adj_city, newPath])
                             entryFinder[adj_city] = cost
                         else:
                             if cost < entryFinder[adj_city]:
                                 path = p[1][1]
                                 newPath = list(path)
                                 newPath.append(actual_city)
-                                hp.heappush(openList, (cost, [adj_city, newPath]))
-                                #the best here is to remove the higher cost
-                                #but the heapq impl don't make this easy
-                                #in future replace heapq by a min_heap impl
+                                for i in range(1,openList.heap_size):
+                                    if openList.heap[i][0] == adj_city:
+                                        openList.heap[i][1] = newPath
+                                        openList.decrease_priority(i, cost)
 
     def solve_with_sma_star(self, memory_max):
         path=[]
-        openList = []
+        openList = MinHeap([])
         entryFinder = {}
-        hp.heappush(openList, (self.heuristic[self.startingNode], [self.startingNode, []]))
+        openList.insert(self.heuristic[self.startingNode], [self.startingNode, []])
         entryFinder[self.startingNode] = 0
         closedList = []
-
         memory_spend = 0
+
         for i in range(1, MAX_ATTEMPTS):
-            if len(openList) is 0:
+            if openList.heap_size is 0:
                 raise Exception("Not found a solution")
             else:
-                if len(openList) > memory_spend:
-                    memory_spend = len(openList)
-                p = hp.heappop(openList)
+                if openList.heap_size > memory_spend:
+                    memory_spend = openList.heap_size
+                p = openList.extract_min()
                 cost_until_now = p[0]
                 actual_city = p[1][0]
                 if actual_city in entryFinder:
@@ -101,24 +102,23 @@ class Problem:
                             path = p[1][1]
                             newPath = list(path)
                             newPath.append(actual_city)
-                            if len(openList) >= memory_max:
-                                for i in range (math.floor(len(openList)/2), len(openList)-1):
-                                    if openList[i][0] == hp.nlargest(1, openList)[0][0]:
-                                        del openList[i]
-                                        break
-                            hp.heappush(openList, (cost, [adj_city, newPath]))
+                            if openList.heap_size >= memory_max:
+                                openList.extract_max()
+                            openList.insert(cost, [adj_city, newPath])
                             entryFinder[adj_city] = cost
                         else:
                             if cost < entryFinder[adj_city]:
                                 path = p[1][1]
                                 newPath = list(path)
                                 newPath.append(actual_city)
-                                if len(openList) >= memory_max:
-                                    for i in range (math.floor(len(openList)/2), len(openList)-1):
-                                        if openList[i][0] == hp.nlargest(1, openList)[0][0]:
-                                            del openList[i]
-                                            break
-                                hp.heappush(openList, (cost, [adj_city, newPath]))
-                                #the best here is to remove the higher cost
-                                #but the heapq impl don't make this easy
-                                #in future replace heapq by a min_heap impl
+                                if openList.heap_size >= memory_max:
+                                    (max, maxEl) = openList.extract_max()
+                                    # maxParent = openList.parent(max)
+                                    # if openList.heap[maxParent][1][0] in closedList:
+                                        # closedList.remove(openList.heap[maxParent][1][0])
+                                    # openList.heap[maxParent][0] = maxEl[0]
+                                # openList.insert(cost, [adj_city, newPath])
+                                for i in range(1,openList.heap_size):
+                                    if openList.heap[i][0] == adj_city:
+                                        openList.heap[i][1] = newPath
+                                        openList.decrease_priority(i, cost)
