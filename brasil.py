@@ -1,10 +1,14 @@
 import csv
-import networkx as nx
 import heapq as hp
-from heapq_max import *
-from math import radians, cos, sin, asin, sqrt
+from math import asin, cos, radians, sin, sqrt
+
+import networkx as nx
+
 from graph_search import Problem
+from heapq_max import *
+import pygraphviz as pgv
 from max_heap import MaxHeap
+
 
 def getDistanceFromLatLng(lat1, lng1, lat2, lng2):
     r=6371 # radius of the earth in km
@@ -21,7 +25,6 @@ def generate_brasil_with_h_csv():
         br_km_reader = csv.reader(br_km, delimiter=',', quotechar='|')
         br_km_cities = next(br_km_reader)
 
-    print(br_km_cities)
     brasil_with_h = open('brasil_with_h.csv', 'w')
     writer = csv.writer(brasil_with_h, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
@@ -62,7 +65,7 @@ def generate_graph(max_dist, max_edges):
                         if(len(city_edges)>=max_edges):
                             heappushpop_max(city_edges, (num_dist, br_km_cities[i-1]))
                         else:
-                            heappush_max(city_edges, (num_dist, br_km_cities[i]))
+                            heappush_max(city_edges, (num_dist, br_km_cities[i-1]))
                 except ValueError:
                     pass
             for edge in city_edges:
@@ -92,11 +95,10 @@ def generate_graph_lat_lon(max_dist, max_edges):
                     pass
             for edge in city_edges:
                 edges.append((city[0], edge[1], {"distance": edge[0]}))
-        # G.add_edges_from(edges)
+        G.add_edges_from(edges)
     return G
 
-G = generate_graph(1000, 100)
-print(G)
+
 def generate_heuristic_dlr_to(city, graph):
     heuristic_dlr = {}
     city_lat = 0
@@ -107,7 +109,6 @@ def generate_heuristic_dlr_to(city, graph):
             if(row[0] == city):
                 city_lat = float(row[2])
                 city_lon = float(row[3])
-
     with open('data/brasil_with_h.csv') as brwh:
         reader = csv.reader(brwh, delimiter=',', quotechar='|')
         for row in reader:
@@ -124,7 +125,8 @@ def draw_graph(G):
     warnings.simplefilter('ignore', RuntimeWarning)
     for u,v,d in G.edges(data=True):
         d['label'] = d.get('distance','')
-    A=nx.nx_agraph.to_agraph(G)
+    # A=nx.nx_agraph.to_agraph(G)
+    A= pgv.AGraph(G._adj)
     A.node_attr['shape']='circle'
     A.node_attr['fixedsize']='true'
     A.node_attr['fontsize']='8'
@@ -137,14 +139,13 @@ def draw_graph(G):
     with open('data/brasil_with_h.csv') as br_km:
         br_reader = csv.reader(br_km, delimiter=',', quotechar='|')
         for city in br_reader:
-            # print(city)
             n=A.get_node(city[0])
             x = city[2]
             y = city[3]
             pop=100
             # assign positions, scale to be something reasonable in points
-            n.attr['pos']="%f,%f)"%((float(x)),(float(y)))
-            print(n.attr['pos'])
+            n.attr['pos']="%f,%f)"%(90+(float(x)),90+(float(y)))
+            # print(n.attr['pos'])
             # assign node size, in sqrt of 1,000,000's of people
             # d=math.sqrt(float(pop)/1000000.0)
             # n.attr['height']="%s"%(d/2)
@@ -154,9 +155,10 @@ def draw_graph(G):
             # empty labels
             # n.attr['label']=' '
 
-    A.layout()
-    A.draw('brasil100.png',prog='fdp')
+    # A.layout(prog='neato')
+    A.draw('brasil2.png', prog='neato')
 
+G = generate_graph(800, 15)
 # draw_graph(G)
 start = 'Rio de Janeiro'
 objective = 'Ourinhos'
@@ -164,4 +166,4 @@ objective = 'Ourinhos'
 heuristic = generate_heuristic_dlr_to(objective, G)
 rio_to_ourinhos = Problem(start, [objective], G, heuristic)
 rio_to_ourinhos.solve_with_a_star()
-rio_to_ourinhos.solve_with_sma_star(90)
+rio_to_ourinhos.solve_with_sma_star(29)

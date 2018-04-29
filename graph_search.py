@@ -4,7 +4,7 @@ import pygraphviz as pgv
 import math
 from min_heap import MinHeap
 
-MAX_ATTEMPTS = 1000
+MAX_ATTEMPTS = 100000
 
 class Problem:
     def __init__(self, start, objectives, graph, heuristic):
@@ -20,7 +20,8 @@ class Problem:
         path=[]
         openList = MinHeap([])
         entryFinder = {}
-        openList.insert(self.heuristic[self.startingNode], [self.startingNode, []])
+        initial_cost = self.heuristic[self.startingNode]
+        openList.insert(initial_cost, [self.startingNode, []])
         entryFinder[self.startingNode] = 0
         closedList = []
         memory_spend=0
@@ -61,15 +62,19 @@ class Problem:
                                 newPath = list(path)
                                 newPath.append(actual_city)
                                 for i in range(1,openList.heap_size):
-                                    if openList.heap[i][0] == adj_city:
-                                        openList.heap[i][1] = newPath
+                                    if openList.heap[i][1][0] == adj_city:
+                                        openList.heap[i][1][1] = newPath
                                         openList.decrease_priority(i, cost)
+                                        entryFinder[adj_city] = cost
+                                        break;
+        raise Exception("Max attempts reached")
 
     def solve_with_sma_star(self, memory_max):
         path=[]
         openList = MinHeap([])
         entryFinder = {}
-        openList.insert(self.heuristic[self.startingNode], [self.startingNode, []])
+        initial_cost = self.heuristic[self.startingNode]
+        openList.insert(initial_cost, [self.startingNode, [], initial_cost])
         entryFinder[self.startingNode] = 0
         closedList = []
         memory_spend = 0
@@ -81,7 +86,7 @@ class Problem:
                 if openList.heap_size > memory_spend:
                     memory_spend = openList.heap_size
                 p = openList.extract_min()
-                cost_until_now = p[0]
+                cost_until_now = p[1][2]
                 actual_city = p[1][0]
                 if actual_city in entryFinder:
                     entryFinder.pop(actual_city)
@@ -103,8 +108,14 @@ class Problem:
                             newPath = list(path)
                             newPath.append(actual_city)
                             if openList.heap_size >= memory_max:
-                                openList.extract_max()
-                            openList.insert(cost, [adj_city, newPath])
+                                (max, maxEl) = openList.extract_max()
+                                maxParent = openList.parent(max)
+                                if openList.heap[maxParent][1][0] in closedList:
+                                    closedList.remove(openList.heap[maxParent][1][0])
+                                openList.heap[maxParent][0] = maxEl[0]
+                                openList.heapify(maxParent)
+                                # del entryFinder[maxEl[1][0]]
+                            openList.insert(cost, [adj_city, newPath, cost])
                             entryFinder[adj_city] = cost
                         else:
                             if cost < entryFinder[adj_city]:
@@ -113,12 +124,20 @@ class Problem:
                                 newPath.append(actual_city)
                                 if openList.heap_size >= memory_max:
                                     (max, maxEl) = openList.extract_max()
-                                    # maxParent = openList.parent(max)
-                                    # if openList.heap[maxParent][1][0] in closedList:
-                                        # closedList.remove(openList.heap[maxParent][1][0])
-                                    # openList.heap[maxParent][0] = maxEl[0]
-                                # openList.insert(cost, [adj_city, newPath])
+                                    maxParent = openList.parent(max)
+                                    if openList.heap[maxParent][1][0] in closedList:
+                                        closedList.remove(openList.heap[maxParent][1][0])
+                                    if openList.heap[max][1][0] in closedList:
+                                        closedList.remove(openList.heap[max][1][0])
+                                    openList.heap[maxParent][0] = maxEl[0]
+                                    openList.heapify(maxParent)
+                                openList.insert(cost, [adj_city, newPath, cost])
+                                entryFinder[adj_city] = cost
                                 for i in range(1,openList.heap_size):
-                                    if openList.heap[i][0] == adj_city:
-                                        openList.heap[i][1] = newPath
+                                    if openList.heap[i][1][0] == adj_city:
+                                        openList.heap[i][1][1] = newPath
+                                        openList.heap[i][1][2] = cost
                                         openList.decrease_priority(i, cost)
+                                        entryFinder[adj_city] = cost
+                                        break;
+        raise Exception("Max attempts reached")

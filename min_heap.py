@@ -7,8 +7,15 @@ class MinHeap:
         self.heap_size = len(list)
         self.build()
 
-    def __str__(self):
-        return "{}".format(self.heap)
+    def print_heap(self):
+        i=0
+        while i< self.heap_size:
+            j = min(self.left(i), self.heap_size)
+            while i<j:
+                print(self.heap[i], end = '  ')
+                i+=1
+            print("\n")
+        return ""
 
     def parent(self, key):
         return int(math.floor((key-1)/2))

@@ -75,6 +75,7 @@ heuristic_dlr_to_bucarest = {
 romeniaProblem = Problem('Arad',['Bucarest'], G, heuristic_dlr_to_bucarest)
 
 romeniaProblem.solve_with_a_star()
+romeniaProblem.solve_with_sma_star(5)
 
 # for u,v,d in G.edges(data=True):
 #     d['label'] = d.get('distance','')
