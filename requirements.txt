@@ -37,7 +37,7 @@ pycrypto==2.6.1
 pycups==1.9.73
 pycurl==7.43.0
 pyenchant==1.6.7
-Pygments==2.2.0
+Pygments==2.7.4
 pygobject==3.24.1
 pygraphviz==1.5.dev0
 python-apt==1.4.0b3
